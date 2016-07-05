@@ -1,0 +1,6 @@
+---
+- hosts: all
+
+  tasks:
+  - name: Remove LVS deleteme00
+    script: scripts/remove-lvs-deleteme00.sh

@@ -1,0 +1,6 @@
+---
+- hosts: swift
+
+  tasks:
+  - name: Format Swift drives
+    script: scripts/format-swift-drives.sh

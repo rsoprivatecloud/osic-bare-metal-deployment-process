@@ -1,0 +1,6 @@
+---
+- hosts: controller:logging:cinder:swift:!compute
+
+  tasks:
+  - name: Remove LVS nova00
+    script: scripts/remove-lvs-nova00.sh
