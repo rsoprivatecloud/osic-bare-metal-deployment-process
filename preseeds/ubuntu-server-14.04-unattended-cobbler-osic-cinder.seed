@@ -108,7 +108,7 @@ d-i clock-setup/utc boolean true
 #############
 
 d-i partman/early_command string \
-      wget --no-check-certificate https://raw.githubusercontent.com/jameswthorne/osic-raid-scripts/master/create_raid_cinder.sh -O /tmp/create_raid_cinder.sh; \
+      wget --no-check-certificate https://raw.githubusercontent.com/rsoprivatecloud/osic-raid-scripts/master/create_raid_cinder.sh -O /tmp/create_raid_cinder.sh; \
       /bin/sh /tmp/create_raid_cinder.sh
 
 # If one of the disks that are going to be automatically partitioned
