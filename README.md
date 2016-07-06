@@ -33,6 +33,8 @@ Once the deployment host is booted to the ISO, follow these steps to begin insta
 
 5. Type __preseed/url=http://public.thornelabs.net/ubuntu-server-14.04-unattended-iso-osic-generic.seed__
 
+  If for some reason the link above fails to download, copy the Preseed file located [here](https://github.com/rsoprivatecloud/osic-bare-metal-deployment-process/blob/master/preseeds/ubuntu-server-14.04-unattended-iso-osic-generic.seed) to any web server and access it over HTTP in the __preseed/url__. Accessing the Preseed file over HTTPS will not work because Preseed does not understand HTTPS.
+
 6. Hit __Enter__ to begin the install process.
 
 7. You will be prompted for the following menus:
@@ -108,7 +110,9 @@ Change into root's home directory:
 
     cd /root
 
-Download the LXC container to the deployment host:
+Download the LXC container to the deployment host.
+
+If for some reason the following link fails to download, you can create your own osic-prep LXC container by following the instructions [here](#create-the-osic-prep-lxc-container).
 
     wget http://public.thornelabs.net/osic-prep-lxc-container.tar.gz
     
