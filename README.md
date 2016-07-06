@@ -161,25 +161,23 @@ Open __/etc/cobbler/dhcp.template__ and reconfigure your DHCP settings. You will
          max-lease-time             43200;
          next-server                $next_server;
 
-Pull updates for __osic-prep-ansible__:
+Pull updates for the __osic-bare-metal-deployment__ repository (you will need to be able to access the private __rsoprivatecloud__ repository:
 
-    cd /root/osic-prep-ansible
+    cd /root/osic-bare-metal-deployment-process
 
     git pull origin master
+
+Copy any Preseed updates:
+
+    cp /root/osic-bare-metal-deployment-process/preseeds/* /opt/osic-preseeds/
 
 This is optional, create the roles directory and download the __rpc_networking__ Playbook:
 
-    mkdir -p /root/osic-prep-ansible/playbooks/roles
+    mkdir -p /root/osic-bare-metal-deployment-process/ansible-prep/playbooks/roles
 
-    cd /root/osic-prep-ansible/playbooks/roles
+    cd /root/osic-bare-metal-deployment-process/ansible-prep/playbooks/roles
 
     git clone https://github.com/rsoprivatecloud/ansible-role-rpc_networking.git rpc_networking
-
-Pull updates for __osic-preseeds__:
-
-    cd /opt/osic-preseeds
-    
-    git pull origin master
 
 Finally, restart Cobbler and sync it:
 
@@ -285,7 +283,7 @@ You will only use the __ssd__ Cobbler Profiles if the servers contain SSD drives
 
 With this CSV file in place, run the __generate_cobbler_systems.py__ script to generate a __cobbler system__ command for each server and pipe the output to `bash` to actually add the __cobbler system__ to Cobbler:
 
-    cd /root/rpc-prep-scripts
+    cd /root/osic-bare-metal-deployment-process/prep-scripts
 
     python generate_cobbler_system.py /root/input.csv | bash
 
@@ -328,7 +326,7 @@ With the servers PXE booted, you will now need to bootstrap the servers.
 
 Start by running the `generate_ansible_hosts.py` Python script:
 
-    cd /root/rpc-prep-scripts
+    cd /root/osic-bare-metal-deployment-process/prep-scripts
 
     python generate_ansible_hosts.py /root/input.csv > /root/osic-prep-ansible/hosts
 
@@ -360,7 +358,7 @@ An example for openstack-ansible or RPC-O installations:
 
 The LXC container will not have all of the new server's SSH fingerprints in its __known_hosts__ file. Programatically add them by running the following command:
 
-    for i in $(cat /root/osic-prep-ansible/hosts | awk /ansible_ssh_host/ | cut -d'=' -f2)
+    for i in $(cat /root/osic-bare-metal-deployment-process/ansible-prep/hosts | awk /ansible_ssh_host/ | cut -d'=' -f2)
     do
     ssh-keygen -R $i
     ssh-keyscan -H $i >> /root/.ssh/known_hosts
@@ -368,7 +366,7 @@ The LXC container will not have all of the new server's SSH fingerprints in its 
 
 Verify Ansible can talk to every server (the password is __cobbler__):
 
-    cd /root/osic-prep-ansible
+    cd /root/osic-bare-metal-deployment-process/ansible-prep-hosts
 
     ansible -i hosts all -m shell -a "uptime" --ask-pass
 
@@ -378,15 +376,15 @@ Generate an SSH key pair for the LXC container:
 
     ssh-keygen
 
-Copy the LXC container's SSH public key to the __osic-prep-ansible__ directory:
+Copy the LXC container's SSH public key to the __ansible-prep__ directory:
 
-    cp /root/.ssh/id_rsa.pub /root/osic-prep-ansible/playbooks/files/public_keys/osic-prep
+    cp /root/.ssh/id_rsa.pub /root/osic-bare-metal-deployment-process/ansible-prep/playbooks/files/public_keys/osic-prep
 
 ### Bootstrap the Servers
 
 Finally, run the bootstrap.yml Ansible Playbook:
 
-    cd /root/osic-prep-ansible
+    cd /root/osic-bare-metal-deployment-process/ansible-prep/
 
     ansible-playbook -i hosts playbooks/bootstrap.yml --ask-pass
 
@@ -412,7 +410,7 @@ In order to get around this, you must install an updated Linux kernel.
 
 You can quickly do this by running the following commands:
 
-    cd /root/osic-prep-ansible
+    cd /root/osic-bare-metal-deployment-process/ansible-prep/
 
     ansible -i hosts all -m shell -a "apt-get update; apt-get install -y linux-generic-lts-xenial" --forks 25
 
@@ -513,17 +511,9 @@ Install ansible and dependencies:
 
     pip install ansible markupsafe
 
-Download the __osic-prep-ansible__ directory:
+Download the __osic-bare-metal-deployment__ repository (you will need to be able to access the private __rsoprivatecloud__ repository:
 
-    cd /root
-
-    git clone https://github.com/rsoprivatecloud/osic-prep-ansible.git
-
-Download the __rpc-prep-scripts__ directory:
-
-    cd /root
-
-    git clone https://github.com/rsoprivatecloud/rpc-prep-scripts.git
+    git clone https://github.com/rsoprivatecloud/osic-bare-metal-deployment-process
 
 Configure the DHCP server by running the following sed commands. You will need to change __172.22.0.22__ to match the IP address you assigned to eth1 inside the LXC container.
 
@@ -635,15 +625,15 @@ Create a fresh __authorized_keys__ file and set the proper permissions:
 
 Cobbler will rewrite provisioned Ubuntu server's apt sources.list file to point to the Cobbler server. The Cobbler server will not have the most up-to-date packages, so there is a command in the Preseed file that will overwrite the sources.list file to be a normal Ubuntu one.
 
-Download the default Ubuntu sources.list file:
+Copy the default Ubuntu sources.list file:
 
-    wget https://raw.githubusercontent.com/rsoprivatecloud/default-ubuntu-sources.list/master/trusty-sources.list -O /var/www/html/trusty-sources.list
+    cp /root/osic-bare-metal-deployment-process/default-ubuntu-sources.list/trusty-sources.list /var/www/html/trusty-sources.list
 
-The default Ubuntu Preseed is not unattended. Download the following Preseeds which are all unattended:
+The default Ubuntu Preseed is not unattended. Copy the following Preseeds into place:
 
-    cd /opt
-    
-    git clone https://github.com/rsoprivatecloud/osic-preseeds.git
+    mkdir /opt/osic-preseeds/
+
+    cp -r /root/osic-bare-metal-deployment-process/preseeds/* /opt/osic-preseeds/
 
 There are many different RAID array types. Setup the following Cobbler Profiles so you can use any of them:
 
@@ -677,7 +667,7 @@ There are many different RAID array types. Setup the following Cobbler Profiles 
     --distro ubuntu-14.04.3-server-i40e-hp-raid-x86_64 \
     --kickstart /opt/osic-preseeds/ubuntu-server-14.04-unattended-cobbler-osic-swift-ssd.seed
 
-Restart and Sync Cobbler
+Restart and Sync Cobbler:
 
     service cobbler restart
 
