@@ -1,0 +1,49 @@
+---
+users:
+   root:
+     password: CHANGE_HASHED_PASSWORD
+     shell: /bin/bash
+   rack:
+     password: CHANGE_HASHED_PASSWORD
+     shell: /bin/bash
+rpc_networking:
+    template: interfaces-active-passive.j2
+    bond_interfaces:
+      - name: p1p1
+        bond: bond0
+        bond_primary: true
+      - name: p1p2
+        bond: bond1
+        bond_primary: true
+      - name: p2p1
+        bond: bond0
+      - name: p2p2
+        bond: bond1
+    host:
+      interface: bond0
+      address: {{ host_ip }}
+      netmask: 255.255.252.0
+      gateway: 10.240.0.1
+      nameservers: '8.8.8.8'
+    mgmt:
+      interface: bond0
+      vlan: 10
+      address: {{ mgmt_ip }}
+      netmask: 255.255.252.0
+    storage:
+      interface: bond0
+      vlan: 20
+      address: {{ storage_ip }}
+      netmask: 255.255.252.0
+    vlan:
+      interface: bond1
+    vxlan:
+      interface: bond1
+      vlan: 30
+      address: {{ vxlan_ip }}
+      netmask: 255.255.252.0
+    swift:
+      interface: bond1
+      vlan: 40
+      address: {{ swift_ip }}
+      netmask: 255.255.252.0
