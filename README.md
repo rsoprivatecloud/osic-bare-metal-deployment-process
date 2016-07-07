@@ -429,7 +429,7 @@ Once all servers reboot, you can begin installing openstack-ansible or RPC-O.
 Create the osic-prep LXC Container
 ----------------------------------
 
-_The following steps only need to be done if the LXC container needs to be rebuilt._
+_The following steps only need to be done if the osic-prep LXC container needs to be rebuilt._
 
 ### Setup the Build Host
 
@@ -439,32 +439,11 @@ In order to use the LXC container, a new bridge will need to be created: __br-px
 
 First, install the necessary networking packages:
 
-    apt-get install vlan bridge-utils
+    apt-get install bridge-utils
 
-Reconfigure the network interface file to match the following:
+Create a temporary Linux bridge interface:
 
-    # The loopback network interface
-    auto lo
-    iface lo inet loopback
-
-    auto
-    iface p1p1 inet manual
-
-    # Container Bridge
-    auto br-pxe
-    iface br-pxe inet static
-    address 172.22.0.21
-    netmask 255.255.252.0
-    gateway 172.22.0.1
-    dns-nameservers 8.8.8.8 8.8.4.4
-    bridge_ports p1p1
-    bridge_stp off
-    bridge_waitport 0
-    bridge_fd 0
-
-Bring up __br-pxe__:
-
-    ifdown p1p1; ifup br-pxe
+    brctl addbr br-pxe
 
 Install necessary LXC packages:
 
@@ -505,6 +484,8 @@ Install the necessary packages:
     python-dev \
     python-setuptools \
     sshpass \
+    libssl-dev \
+    ca-certificates \
     ipmitool
 
 Install pip:
@@ -515,9 +496,9 @@ Install ansible and dependencies:
 
     pip install ansible markupsafe
 
-Download the __osic-bare-metal-deployment__ repository (you will need to be able to access the private __rsoprivatecloud__ repository:
+Download the __osic-bare-metal-deployment__ repository (you must have access to the private __rsoprivatecloud__ repository:
 
-    git clone https://github.com/rsoprivatecloud/osic-bare-metal-deployment-process
+    git clone https://github.com/rsoprivatecloud/osic-bare-metal-deployment-process.git
 
 Configure the DHCP server by running the following sed commands. You will need to change __172.22.0.22__ to match the IP address you assigned to eth1 inside the LXC container.
 
@@ -555,7 +536,7 @@ Now, exit the LXC container:
 
     exit
 
-Back on the build host, begin downloading the modified Ubuntu Server 14.04.3 ISO:
+Back on the build host, begin downloading the modified Ubuntu Server 14.04 ISO:
 
     wget http://public.thornelabs.net/ubuntu-14.04.3-server-i40e-hp-raid-x86_64.iso
 
@@ -569,7 +550,7 @@ rsync will be used to transfer the ISO contents to the LXC container, so install
 
     service ssh start
 
-First, create the __.ssh__ directory and set proper permissions:
+Create the __.ssh__ directory and set proper permissions:
 
     mkdir -p /root/.ssh
 
@@ -595,11 +576,11 @@ Back on the build host, the Ubuntu ISO should have downloaded. Mount it:
 
     mount -o loop ubuntu-14.04.3-server-i40e-hp-raid-x86_64.iso /mnt
 
-Copy the mounted ISO contents to the LXC container. You will probably need to change the container's IP address, 10.0.3.223 in this example, to match your own. Find the container's private IP address by running `lxc-info --name osic-prep | grep IP` and use the __10.0.X.X__ IP address:
+Copy the mounted ISO contents to the LXC container. You will probably need to change the container's IP address, 10.0.3.223 in this example, to match your own. Find the container's private IP address by running `lxc-info --name osic-prep | grep IP` and use the __10.0.X.X__ IP address shown:
 
     rsync -a --stats --progress /mnt/* 10.0.3.223:/root/ubuntu-14.04.3-server-i40e-hp-raid-x86_64/
 
-Unmount the Ubuntu ISO from the host:
+Once the rsync is complete, unmount the Ubuntu ISO from the host:
 
     umount /mnt
 
@@ -615,7 +596,7 @@ Import the Ubuntu ISO into cobbler:
 
     cobbler import --name=ubuntu-14.04.3-server-i40e-hp-raid-x86_64 --path=/root/ubuntu-14.04.3-server-i40e-hp-raid-x86_64
 
-Now that the data is imported, you can delete the directory:
+Now that the data is imported, delete the Ubuntu ISO directory:
 
     rm -rf /root/ubuntu-14.04.3-server-i40e-hp-raid-x86_64
     
@@ -701,4 +682,8 @@ Tar up the LXC container:
 
     tar --numeric-owner -cvzf /root/osic-prep-lxc-container.tar.gz osic-prep
 
-Finally, upload the tar'd LXC container to Cloud Files so it can be accessed from customer environments by the Implementation Team.
+Destroy the temporary Linux bridge:
+
+    brctl delbr br-pxe
+
+Finally, upload the tar'd LXC container to Cloud Files so it can be downloaded from customer environments.
